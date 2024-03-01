@@ -9,22 +9,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import util.HttpRequestUtils;
+import util.IOUtils;
 import util.HttpRequestUtils.Pair;
-
-enum HttpMethod {
-    GET, POST, PUT, DELETE
-}
 
 public class HttpRequest {
     private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
     private Uri uri;
     private HttpMethod method;
     private Map<String, String> headers = new HashMap<>();
+    private String body;
+    private Set<String> staticFileExtesnions = Set.of("html", "js", "css"); 
 
     private HttpRequest(InputStream in) throws IOException {
         parseHttpRequest(in);
@@ -48,6 +48,12 @@ public class HttpRequest {
         });
     }
 
+    private void parseBody(BufferedReader br) throws IOException {
+        if (this.headers.containsKey("Content-Length")) {
+            body = IOUtils.readData(br, Integer.parseInt(this.headers.get("Content-Length")));
+        }
+    }
+
     private void parseHttpRequest(InputStream in) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
         parseRequestLine(br.readLine());
@@ -55,7 +61,9 @@ public class HttpRequest {
         for (String line = br.readLine(); !"".equals(line) && line != null; line = br.readLine()) {
             headers.add(line);
         }
+        br.readLine();
         parseHeaders(headers);
+        parseBody(br);
     }
 
     public HttpMethod getMethod() {
@@ -64,5 +72,19 @@ public class HttpRequest {
 
     public Uri getUri() {
         return this.uri;
+    }
+
+    public String getBody() {
+        return this.body;
+    }
+
+    public boolean isStaticFileRequest() {
+        if (method != HttpMethod.GET) return false;
+        int idx = uri.getUri().lastIndexOf(".");
+        if (idx >= 0) {
+            String extension = uri.getUri().substring(idx + 1);
+            return staticFileExtesnions.contains(extension);
+        }
+        return false;
     }
 }
