@@ -10,19 +10,26 @@ import util.HttpRequestUtils;
 
 public class HttpResponse {
     private static final Logger log = LoggerFactory.getLogger(HttpResponse.class);
-    private Uri uri;
-    private HttpStatus status;
+    private final HttpStatus status;
     private String headers;
-    private byte[] body;
+    private byte[] body = new byte[0];
     
-    public HttpResponse(HttpStatus status, String body) {
+    private HttpResponse(HttpStatus status, String body) {
         this.status = status;
         this.body = body.getBytes();
     }
 
-    public HttpResponse(HttpStatus status, byte[] body) {
+    private HttpResponse(HttpStatus status, byte[] body) {
         this.status = status;
         this.body = body;
+    }
+
+    public static HttpResponse of(HttpStatus status, String body) {
+        return new HttpResponse(status, body);
+    }
+
+    public static HttpResponse of(HttpStatus status, byte[] body) {
+        return new HttpResponse(status, body);
     }
 
     public byte[] getBody() {

@@ -18,8 +18,8 @@ public class UserController implements Controller {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     @Override
-    public HttpResponse controll(HttpRequest request) throws IOException {
-        String requestPath = request.getUri().getRequestPath();
+    public HttpResponse controll(HttpRequest request) {
+        String requestPath = request.getRequestPath();
         if (requestPath.equals("/user/create") && request.getMethod() == HttpMethod.POST) {
             return signup(request);
         }
@@ -27,18 +27,16 @@ public class UserController implements Controller {
     }
 
     private HttpResponse signup(HttpRequest request) {
-        Map<String, String> params = HttpRequestUtils.parseQueryString(request.getBody());
-        String userId = params.get("userId");
-        String password = params.get("password");
-        String name = params.get("name");
-        String email = params.get("email");
+        Map<String, String> requestBody = request.getRequestBody();
+        String userId = requestBody.get("userId");
+        String password = requestBody.get("password");
+        String name = requestBody.get("name");
+        String email = requestBody.get("email");
 
         User user = User.of(userId, password, name, email);
 
         log.debug("{} user signup complete", user);
 
-        HttpResponse response = new HttpResponse(HttpStatus.CREATED, user.toString());
-
-        return response;
+        return HttpResponse.of(HttpStatus.CREATED, user.toString());
     }
 }
