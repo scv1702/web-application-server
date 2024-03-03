@@ -8,8 +8,13 @@ import webserver.http.request.HttpRequest;
 
 public class StaticFileController {
 
-    public static HttpResponse controll(HttpRequest request) throws IOException {
+    public static void controll(HttpRequest request, HttpResponse response) throws IOException {
         File file = new File("webapp" + request.getPath());
-        return HttpResponse.of(HttpStatus.OK, file);
+        if (!file.exists()) {
+            response.status(HttpStatus.NOT_FOUND).send();
+        }
+        response.status(HttpStatus.OK)
+            .body(file)
+            .send();
     }
 }

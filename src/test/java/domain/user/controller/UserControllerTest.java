@@ -5,21 +5,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import domain.user.model.User;
 import domain.user.repository.UserRepository;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import webserver.http.HttpStatus;
 import webserver.http.request.HttpRequest;
 import webserver.http.response.HttpResponse;
 
 class UserControllerTest {
 
+    private static final Logger log = LoggerFactory.getLogger(UserControllerTest.class);
     private final UserController userController = new UserController();
+    private ByteArrayOutputStream out;
+    private DataOutputStream dos;
 
     @BeforeEach
     void setUp() {
+        out = new ByteArrayOutputStream();
+        dos = new DataOutputStream(out);
         UserRepository.save(User.of("test", "password", "name", "email"));
     }
 
@@ -42,10 +51,10 @@ class UserControllerTest {
                         
             %s
             """, body.length(), body).getBytes());
-        HttpRequest request = HttpRequest.from(in);
 
         //when
-        HttpResponse response = userController.controll(request);
+        userController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FOUND);
@@ -68,10 +77,10 @@ class UserControllerTest {
                         
             %s
             """, body.length(), body).getBytes());
-        HttpRequest request = HttpRequest.from(in);
 
         //when
-        HttpResponse response = userController.controll(request);
+        userController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FOUND);
@@ -97,10 +106,10 @@ class UserControllerTest {
                         
             %s
             """, body.length(), body).getBytes());
-        HttpRequest request = HttpRequest.from(in);
 
         //when
-        HttpResponse response = userController.controll(request);
+        userController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FOUND);
@@ -123,10 +132,10 @@ class UserControllerTest {
             Cookie: logined=true
                         
             """.getBytes());
-        HttpRequest request = HttpRequest.from(in);
 
         //when
-        HttpResponse response = userController.controll(request);
+        userController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK);
@@ -143,10 +152,10 @@ class UserControllerTest {
             Accept: */*
                         
             """.getBytes());
-        HttpRequest request = HttpRequest.from(in);
 
         //when
-        HttpResponse response = userController.controll(request);
+        userController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FOUND);

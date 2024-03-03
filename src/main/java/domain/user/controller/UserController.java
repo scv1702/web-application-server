@@ -2,10 +2,10 @@ package domain.user.controller;
 
 import domain.user.model.User;
 import domain.user.service.UserService;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import webserver.Controller;
-import webserver.http.HttpMethod;
 import webserver.http.HttpStatus;
 import webserver.http.request.HttpRequest;
 import webserver.http.response.HttpResponse;
@@ -14,58 +14,70 @@ public class UserController implements Controller {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     @Override
-    public HttpResponse controll(HttpRequest request) {
+    public void controll(HttpRequest request, HttpResponse response) throws IOException {
         String requestPath = request.getPath();
-        if (requestPath.equals("/user/create") && request.getMethod() == HttpMethod.POST) {
-            return signup(request);
+        if (requestPath.equals("/user/create") && request.getMethod().isPost()) {
+            signup(request, response);
         }
-        if (requestPath.equals("/user/login") && request.getMethod() == HttpMethod.POST) {
-            return login(request);
+        if (requestPath.equals("/user/login") && request.getMethod().isPost()) {
+            login(request, response);
         }
-        if (requestPath.equals("/user/list") && request.getMethod() == HttpMethod.GET) {
-            return getUserList(request);
+        if (requestPath.equals("/user/list") && request.getMethod().isGet()) {
+            getUserList(request, response);
         }
-        return null;
     }
 
-    private HttpResponse signup(HttpRequest request) {
+    private void signup(HttpRequest request, HttpResponse response) throws IOException {
         try {
             String userId = request.getBody().getParameter("userId");
             String password = request.getBody().getParameter("password");
             String name = request.getBody().getParameter("name");
             String email = request.getBody().getParameter("email");
             User user = UserService.signup(userId, password, name, email);
-            return HttpResponse.of(HttpStatus.FOUND, user.toString())
-                .addHeader("Location", "/index.html");
+            response.status(HttpStatus.FOUND)
+                .body(user.toString())
+                .header("Location", "/index.html")
+                .send();
         } catch (IllegalArgumentException e) {
-            return HttpResponse.of(HttpStatus.BAD_REQUEST, e.getMessage());
+            response.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage())
+                .send();
         }
     }
 
-    private HttpResponse login(HttpRequest request) {
+    private void login(HttpRequest request, HttpResponse response) throws IOException {
         try {
             String userId = request.getBody().getParameter("userId");
             String password = request.getBody().getParameter("password");
             if (UserService.login(userId, password)) {
-                return HttpResponse.of(HttpStatus.FOUND)
-                    .addHeader("Location", "/index.html")
-                    .addHeader("Set-Cookie", "logined=true");
+                response.status(HttpStatus.FOUND)
+                    .header("Location", "/index.html")
+                    .header("Set-Cookie", "logined=true")
+                    .send();
             }
-            return HttpResponse.of(HttpStatus.FOUND)
-                .addHeader("Location", "/user/login_failed.html")
-                .addHeader("Set-Cookie", "logined=false");
+            response.status(HttpStatus.FOUND)
+                .header("Location", "/user/login_failed.html")
+                .header("Set-Cookie", "logined=false")
+                .send();
         } catch (IllegalArgumentException e) {
-            return HttpResponse.of(HttpStatus.BAD_REQUEST, e.getMessage());
+            response.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage())
+                .send();
         }
     }
 
-    private HttpResponse getUserList(HttpRequest request) {
+    private void getUserList(HttpRequest request, HttpResponse response) throws IOException {
         boolean logined = request.getCookie("logined")
             .map("true"::equals)
             .orElse(false);
         if (logined) {
-            return HttpResponse.of(HttpStatus.OK, UserService.getUserList().toString());
+            response.status(HttpStatus.OK)
+                .body(UserService.getUserList().toString())
+                .send();
+        } else {
+            response.status(HttpStatus.FOUND)
+                .header("Location", "/user/login.html")
+                .send();
         }
-        return HttpResponse.of(HttpStatus.FOUND).addHeader("Location", "/user/login.html");
     }
 }

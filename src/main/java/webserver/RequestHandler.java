@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import webserver.http.HttpStatus;
 import webserver.http.request.HttpRequest;
 import webserver.http.response.HttpResponse;
 
@@ -36,21 +35,19 @@ public class RequestHandler extends Thread {
             DataOutputStream dos = new DataOutputStream(out);
 
             HttpRequest request = HttpRequest.from(in);
-            HttpResponse response = HttpResponse.of(HttpStatus.NOT_FOUND, "Not Found");
+            HttpResponse response = HttpResponse.of(dos);
 
             if (request.isStaticFileRequest()) {
-                response = StaticFileController.controll(request);
+                StaticFileController.controll(request, response);
             } else {
                 String requestPath = request.getPath();
                 for (String key : controllers.keySet()) {
                     if (requestPath.contains(key)) {
-                        response = controllers.get(key).controll(request);
+                        controllers.get(key).controll(request, response);
                         break;
                     }
                 }
             }
-
-            response.send(dos);
         } catch (IOException e) {
             log.error(e.getMessage());
         }
