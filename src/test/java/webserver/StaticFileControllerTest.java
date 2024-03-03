@@ -3,12 +3,25 @@ package webserver;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import webserver.http.response.HttpResponse;
 import webserver.http.request.HttpRequest;
+import webserver.http.response.HttpResponse;
 
 class StaticFileControllerTest {
+
+    private ByteArrayOutputStream out;
+    private DataOutputStream dos;
+
+    @BeforeEach
+    void setUp() {
+        out = new ByteArrayOutputStream();
+        dos = new DataOutputStream(out);
+    }
 
     @Test
     public void acceptHtml() throws IOException {
@@ -18,18 +31,18 @@ class StaticFileControllerTest {
         String queryString = "";
         String uri = requestPath + queryString;
         String host = "localhost:8080";
-        String request = String.format("""
+        InputStream in = new ByteArrayInputStream(String.format("""
                 %s %s HTTP/1.1
                 Host: %s
                 Connection: keep-alive
                 Accept: text/html,*/*;q=0.1
                         
                 """,
-            method, uri, host);
-        HttpRequest httpRequest = HttpRequest.from(new ByteArrayInputStream(request.getBytes()));
+            method, uri, host).getBytes());
 
         // when
-        HttpResponse response = StaticFileController.controll(httpRequest);
+        StaticFileController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         // then
         assertThat(response.getHeader("Content-Type").orElseThrow()).isEqualTo("text/html;charset=utf-8");
@@ -43,18 +56,18 @@ class StaticFileControllerTest {
         String queryString = "";
         String uri = requestPath + queryString;
         String host = "localhost:8080";
-        String request = String.format("""
+        InputStream in = new ByteArrayInputStream(String.format("""
                 %s %s HTTP/1.1
                 Host: %s
                 Connection: keep-alive
                 Accept: text/css,*/*;q=0.1
                         
                 """,
-            method, uri, host);
-        HttpRequest httpRequest = HttpRequest.from(new ByteArrayInputStream(request.getBytes()));
+            method, uri, host).getBytes());
 
         // when
-        HttpResponse response = StaticFileController.controll(httpRequest);
+        StaticFileController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpResponse response = HttpResponse.from(out);
 
         // then
         assertThat(response.getHeader("Content-Type").orElseThrow()).isEqualTo("text/css;charset=utf-8");

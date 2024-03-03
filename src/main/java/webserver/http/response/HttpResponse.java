@@ -1,8 +1,12 @@
 package webserver.http.response;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -11,32 +15,62 @@ import webserver.http.HttpHeaders;
 import webserver.http.HttpStatus;
 
 public class HttpResponse {
+
     private static final Logger log = LoggerFactory.getLogger(HttpResponse.class);
-
-    private final HttpResponseLine line;
+    private final DataOutputStream dos;
+    private HttpResponseLine line;
     private final HttpHeaders headers;
-    private final HttpResponseBody body;
+    private HttpResponseBody body;
 
-    private HttpResponse(HttpStatus status, byte[] body) {
+    private HttpResponse(HttpStatus status, HttpHeaders headers, HttpResponseBody body) {
         this.line = HttpResponseLine.of(status);
+        this.headers = headers;
+        this.body = body;
+        this.dos = null;
+    }
+
+    private HttpResponse(DataOutputStream dos) {
+        this.line = HttpResponseLine.of(HttpStatus.OK);
         this.headers = new HttpHeaders();
-        this.body = new HttpResponseBody(body);
-        if (body.length > 0) {
-            addHeader("Content-Length", String.valueOf(body.length));
+        this.body = new HttpResponseBody(new byte[0]);
+        this.dos = dos;
+    }
+
+    public static HttpResponse from(ByteArrayOutputStream out) throws IOException {
+        BufferedReader br = new BufferedReader(
+            new InputStreamReader(new ByteArrayInputStream(out.toByteArray())));
+        String line = br.readLine();
+        if (line == null || line.isEmpty()) {
+            throw new IllegalArgumentException("Invalid Http Response");
         }
+        int statusCode = Integer.parseInt(line.split(" ")[1]);
+        HttpStatus status = HttpStatus.valueOf(statusCode);
+        HttpHeaders headers = HttpHeaders.from(br);
+        HttpResponseBody body = HttpResponseBody.from(br);
+        return new HttpResponse(status, headers, body);
     }
 
-    public static HttpResponse of(HttpStatus status, String body) {
-        return new HttpResponse(status, body.getBytes());
+    public static HttpResponse of(DataOutputStream dos) {
+        return new HttpResponse(dos);
     }
 
-    public static HttpResponse of(HttpStatus status, File file) throws IOException {
-        return new HttpResponse(status, Files.readAllBytes(file.toPath()))
-            .addHeader("Content-Type", Files.probeContentType(file.toPath()) + ";charset=utf-8");
+    public HttpResponse status(HttpStatus status) {
+        this.line = HttpResponseLine.of(status);
+        return this;
     }
 
-    public static HttpResponse of(HttpStatus status) {
-        return new HttpResponse(status, new byte[0]);
+    public HttpResponse body(File file) throws IOException {
+        this.body = new HttpResponseBody(Files.readAllBytes(file.toPath()));
+        header("Content-Type", Files.probeContentType(file.toPath()) + ";charset=utf-8");
+        header("Content-Length", String.valueOf(this.body.getBody().length));
+        return this;
+    }
+
+    public HttpResponse body(String body) {
+        this.body = new HttpResponseBody(body.getBytes());
+        header("Content-Type", "text/html;charset=utf-8");
+        header("Content-Length", String.valueOf(this.body.getBody().length));
+        return this;
     }
 
     public HttpStatus getStatus() {
@@ -47,7 +81,7 @@ public class HttpResponse {
         return headers.getHeader(key);
     }
 
-    public HttpResponse addHeader(String key, String value) {
+    public HttpResponse header(String key, String value) {
         headers.addHeader(key, value);
         return this;
     }
@@ -56,7 +90,7 @@ public class HttpResponse {
         return body.getBody();
     }
 
-    public void send(DataOutputStream dos) throws IOException {
+    public void send() throws IOException {
         dos.writeBytes(line.toString());
         dos.writeBytes(headers.toString());
         dos.write(body.getBody());

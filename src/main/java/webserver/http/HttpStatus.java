@@ -22,4 +22,13 @@ public enum HttpStatus {
     public String value() {
         return value;
     }
+
+    public static HttpStatus valueOf(int code) {
+        for (HttpStatus status : values()) {
+            if (status.code == code) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("No matching constant for [" + code + "]");
+    }
 }
