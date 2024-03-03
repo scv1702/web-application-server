@@ -32,8 +32,8 @@ public class HttpRequestTest {
 
         assertThat(httpRequest.getMethod()).isEqualTo(HttpMethod.valueOf(method));
         assertThat(httpRequest.getPath()).isEqualTo(requestPath);
-        assertThat(httpRequest.getHeader("Host").orElse("")).isEqualTo(host);
-        assertThat(httpRequest.getHeader("Connection").orElse("")).isEqualTo("keep-alive");
-        assertThat(httpRequest.getHeader("Accept").orElse("")).isEqualTo("*/*");
+        assertThat(httpRequest.getHeader("Host").orElseThrow()).isEqualTo(host);
+        assertThat(httpRequest.getHeader("Connection").orElseThrow()).isEqualTo("keep-alive");
+        assertThat(httpRequest.getHeader("Accept").orElseThrow()).isEqualTo("*/*");
     }
 }
