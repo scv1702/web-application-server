@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import webserver.http.HttpSession;
+import webserver.http.HttpSessions;
 import webserver.http.HttpStatus;
 import webserver.http.request.HttpRequest;
 import webserver.http.response.HttpResponse;
@@ -30,6 +32,7 @@ class UserControllerTest {
         out = new ByteArrayOutputStream();
         dos = new DataOutputStream(out);
         UserRepository.save(User.of("test", "password", "name", "email"));
+        HttpSessions.clear();
     }
 
     @AfterEach
@@ -85,9 +88,6 @@ class UserControllerTest {
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FOUND);
         assertThat(
-            response.getHeader("Set-Cookie").orElseThrow())
-            .isEqualTo("logined=true");
-        assertThat(
             response.getHeader("Location").orElseThrow())
             .isEqualTo("/index.html");
     }
@@ -114,9 +114,6 @@ class UserControllerTest {
         //then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FOUND);
         assertThat(
-            response.getHeader("Set-Cookie").orElseThrow())
-            .isEqualTo("logined=false");
-        assertThat(
             response.getHeader("Location").orElseThrow())
             .isEqualTo("/user/login_failed.html");
     }
@@ -134,7 +131,10 @@ class UserControllerTest {
             """.getBytes());
 
         //when
-        userController.controll(HttpRequest.from(in), HttpResponse.of(dos));
+        HttpRequest request = HttpRequest.from(in);
+        HttpSession session = request.getSession();
+        session.setAttribute("user", User.of("test", "password", "name", "email"));
+        userController.controll(request, HttpResponse.of(dos));
         HttpResponse response = HttpResponse.from(out);
 
         //then
