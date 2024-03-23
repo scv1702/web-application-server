@@ -33,4 +33,8 @@ public class UserService {
         log.debug("{} user login complete", user);
         return true;
     }
+
+    public static User getBy(String userId) {
+        return UserRepository.findById(userId);
+    }
 }
