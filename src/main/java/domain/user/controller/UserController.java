@@ -6,6 +6,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import webserver.Controller;
+import webserver.http.HttpSession;
 import webserver.http.HttpStatus;
 import webserver.http.request.HttpRequest;
 import webserver.http.response.HttpResponse;
@@ -50,14 +51,14 @@ public class UserController implements Controller {
             String userId = request.getBody().getParameter("userId");
             String password = request.getBody().getParameter("password");
             if (UserService.login(userId, password)) {
+                HttpSession session = request.getSession();
+                session.setAttribute("user", UserService.getBy(userId));
                 response.status(HttpStatus.FOUND)
                     .header("Location", "/index.html")
-                    .header("Set-Cookie", "logined=true")
                     .send();
             }
             response.status(HttpStatus.FOUND)
                 .header("Location", "/user/login_failed.html")
-                .header("Set-Cookie", "logined=false")
                 .send();
         } catch (IllegalArgumentException e) {
             response.status(HttpStatus.BAD_REQUEST)
@@ -67,10 +68,7 @@ public class UserController implements Controller {
     }
 
     private void getUserList(HttpRequest request, HttpResponse response) throws IOException {
-        boolean logined = request.getCookie("logined")
-            .map("true"::equals)
-            .orElse(false);
-        if (logined) {
+        if (isLogined(request.getSession())) {
             response.status(HttpStatus.OK)
                 .body(UserService.getUserList().toString())
                 .send();
@@ -79,5 +77,9 @@ public class UserController implements Controller {
                 .header("Location", "/user/login.html")
                 .send();
         }
+    }
+
+    private boolean isLogined(HttpSession session) {
+        return session.getAttribute("user") != null;
     }
 }

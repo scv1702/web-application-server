@@ -9,12 +9,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import webserver.http.HttpHeaders;
 import webserver.http.HttpMethod;
+import webserver.http.HttpSession;
+import webserver.http.HttpSessions;
 
 public class HttpRequest {
     private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
 
     private final HttpRequestLine line;
     private final HttpHeaders headers;
+    private final HttpSession session;
     private final HttpCookies cookies;
     private final HttpRequestBody body;
 
@@ -22,6 +25,8 @@ public class HttpRequest {
         this.line = line;
         this.headers = headers;
         this.cookies = new HttpCookies(headers);
+        this.session = HttpSessions.getSession(getCookie("JSESSIONID"))
+            .orElseGet(HttpSessions::createSession);
         this.body = body;
     }
 
@@ -59,5 +64,9 @@ public class HttpRequest {
 
     public Optional<String> getCookie(String key) {
         return cookies.getCookie(key);
+    }
+
+    public HttpSession getSession() {
+        return session;
     }
 }

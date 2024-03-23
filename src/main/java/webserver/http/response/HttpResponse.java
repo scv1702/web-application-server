@@ -7,6 +7,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -29,11 +30,11 @@ public class HttpResponse {
         this.dos = null;
     }
 
-    private HttpResponse(DataOutputStream dos) {
+    private HttpResponse(OutputStream out) {
         this.line = HttpResponseLine.of(HttpStatus.OK);
         this.headers = new HttpHeaders();
         this.body = new HttpResponseBody(new byte[0]);
-        this.dos = dos;
+        this.dos = new DataOutputStream(out);
     }
 
     public static HttpResponse from(ByteArrayOutputStream out) throws IOException {
@@ -50,8 +51,8 @@ public class HttpResponse {
         return new HttpResponse(status, headers, body);
     }
 
-    public static HttpResponse of(DataOutputStream dos) {
-        return new HttpResponse(dos);
+    public static HttpResponse of(OutputStream out) {
+        return new HttpResponse(out);
     }
 
     public HttpResponse status(HttpStatus status) {
